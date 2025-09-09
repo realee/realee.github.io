@@ -1,0 +1,17 @@
+[
+  {
+    "name": "My Awesome Project",
+    "desc": "一个用 Python 开发的自动化工具",
+    "url": "https://github.com/realee/my-awesome-project"
+  },
+  {
+    "name": "GitHub Pages 主页",
+    "desc": "我的个人主页，使用 HTML/CSS 构建",
+    "url": "https://github.com/realee/realee.github.io"
+  },
+  {
+    "name": "SpringBoot 微服务",
+    "desc": "公司项目：统一渠道应用",
+    "url": "https://github.com/realee/cuc-unicomchannel-app"
+  }
+]
