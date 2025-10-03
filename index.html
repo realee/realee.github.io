@@ -6,6 +6,32 @@
   <title>realee 的主页</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <!-- 新增：添加一点自定义样式美化按钮 -->
+  <style>
+    .project-card {
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      transition: transform 0.3s ease;
+    }
+    .project-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .project-link {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.5rem 1rem;
+      background-color: #22c55e; /* 使用饮食应用的绿色主题 */
+      color: white;
+      border-radius: 4px;
+      text-decoration: none;
+    }
+    .project-link:hover {
+      background-color: #16a34a;
+    }
+  </style>
 </head>
 <body>
   <header>
@@ -16,6 +42,8 @@
       <nav>
         <a href="#about">关于我</a>
         <a href="#projects">项目</a>
+        <!-- 新增：导航栏直接添加饮食追踪应用入口 -->
+        <a href="diet-tracker/index.html">饮食追踪</a>
         <a href="https://github.com/realee" target="_blank">GitHub</a>
       </nav>
     </div>
@@ -32,7 +60,15 @@
   <section id="projects" class="container">
     <h2>我的项目</h2>
     <div id="projects-list">
-      <!-- 项目将由 JavaScript 动态加载 -->
+      <!-- 新增：在项目列表中添加饮食追踪应用卡片 -->
+      <div class="project-card">
+        <h3>饮食热量追踪应用</h3>
+        <p>一款帮助记录每日饮食热量和营养成分的工具，支持食物搜索、热量统计和进度追踪。</p>
+        <a href="diet-tracker/index.html" class="project-link">
+          进入应用 <i class="fa fa-arrow-right"></i>
+        </a>
+      </div>
+      <!-- 其他项目可以继续添加在这里 -->
     </div>
   </section>
 

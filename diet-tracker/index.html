@@ -1,0 +1,1362 @@
+<html lang="zh-CN"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>健康追踪 - 饮食热量管理应用</title>
+  <!-- Tailwind CSS v3 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  <!-- 统一的 Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#22c55e',
+            secondary: '#16a34a',
+            tertiary: '#86efac',
+            dark: '#1e293b',
+            light: '#f8fafc',
+            'primary-light': '#dcfce7',
+            'primary-dark': '#15803d'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .card-shadow {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      }
+      .progress-ring-circle {
+        transition: stroke-dashoffset 0.35s;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+      }
+      .tab-indicator {
+        transition: transform 0.3s ease;
+      }
+      .food-card-hover {
+        transition: all 0.3s ease;
+      }
+      .food-card-hover:hover {
+        transform: translateY(-5px);
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans text-dark">
+  <div class="max-w-md mx-auto min-h-screen bg-white relative">
+    <!-- 页面容器 -->
+    <div id="app" class="relative">
+      <!-- 仪表板页面 -->
+      <div id="dashboard-page" class="page active">
+        <!-- 顶部区域 -->
+        <header class="bg-gradient-to-r from-primary to-secondary text-white p-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <h1 class="text-xl font-bold" id="greeting">晓荷饮食管理</h1>
+              <p class="text-sm opacity-90" id="current-date">2025年7月21日 星期一</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-primary-light text-primary flex items-center justify-center text-3xl">🧘‍♀️</div>
+          </div>
+        </header>
+
+        <!-- 进度指示器 -->
+        <div class="p-6 flex flex-col items-center">
+          <div class="relative w-48 h-48 mb-4">
+            <svg class="w-full h-full" viewBox="0 0 100 100">
+              <!-- 背景圆环 -->
+              <circle class="text-gray-200" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50"></circle>
+              <!-- 进度圆环 -->
+              <circle id="progress-ring" class="text-primary progress-ring-circle" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" stroke-dasharray="251.2" stroke-dashoffset="188.4"></circle>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span id="calorie-progress" class="text-3xl font-bold text-dark">300</span>
+              <span class="text-sm text-gray-500">&nbsp;1200 Cals</span>
+            </div>
+          </div>
+          <div class="w-full max-w-xs">
+            <div class="flex justify-between text-sm text-gray-500 mb-1">
+              <span>今日摄入</span>
+              <span id="calorie-percentage">25%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div id="calorie-bar" class="bg-primary h-2 rounded-full" style="width: 25%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 宏量营养素卡片 -->
+        <div class="px-4 mb-6">
+          <h2 class="text-lg font-semibold mb-3">
+</h2>
+          <div class="grid grid-cols-3 gap-3">
+            <!-- 碳水化合物 -->
+            <div class="bg-blue-50 rounded-xl p-3 flex flex-col items-center">
+              <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2 text-2xl">
+                🍞
+              </div>
+              <span class="text-xs text-gray-500">碳水化合物</span>
+              <span id="carbs-value" class="font-semibold">25g</span>
+            </div>
+            <!-- 蛋白质 -->
+            <div class="bg-purple-50 rounded-xl p-3 flex flex-col items-center">
+              <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-2 text-2xl">
+                🥩
+              </div>
+              <span class="text-xs text-gray-500">蛋白质</span>
+              <span id="protein-value" class="font-semibold">18g</span>
+            </div>
+            <!-- 脂肪 -->
+            <div class="bg-yellow-50 rounded-xl p-3 flex flex-col items-center">
+              <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center mb-2 text-2xl" style="color: rgb(123, 145, 181);">🥑</div>
+              <span class="text-xs text-gray-500">脂肪</span>
+              <span id="fat-value" class="font-semibold">12g</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 餐食记录 -->
+        <div class="px-4 mb-10 py-10">
+          <div class="flex justify-between items-center mb-3">
+            <h2 class="text-lg font-semibold">今日餐食</h2>
+            <button id="add-meal-btn" class="text-primary text-sm flex items-center">
+              <i class="fa fa-plus-circle mr-1"></i> 添加餐食
+            </button>
+          </div>
+          
+          <!-- 餐食标签页 -->
+          <div class="relative mb-4">
+            <div class="flex justify-between">
+              <button class="meal-tab flex-1 py-2 text-center text-sm font-medium text-primary border-b-2 border-primary" data-meal="breakfast">早餐</button>
+              <button class="meal-tab flex-1 py-2 text-center text-sm font-medium text-gray-400 border-b-2 border-transparent" data-meal="lunch">午餐</button>
+              <button class="meal-tab flex-1 py-2 text-center text-sm font-medium text-gray-400 border-b-2 border-transparent" data-meal="dinner">晚餐</button>
+              <button class="meal-tab flex-1 py-2 text-center text-sm font-medium text-gray-400 border-b-2 border-transparent" data-meal="snack">零食</button>
+            </div>
+            <div class="tab-indicator absolute bottom-0 left-0 h-0.5 bg-primary w-1/4"></div>
+          </div>
+          
+          <!-- 餐食内容 -->
+          <div class="meal-content active" id="breakfast-content">
+            <div class="space-y-3" id="breakfast-list">
+              <!-- 示例餐食项 -->
+              <div class="bg-white rounded-xl p-3 border border-gray-100 card-shadow flex justify-between items-center">
+                <div class="flex items-center">
+                  <div class="w-10 h-10 rounded-lg overflow-hidden mr-3">
+                    <div class="w-full h-full flex items-center justify-center bg-green-100 text-xl">🥝</div>
+                  </div>
+                  <div>
+                    <h3 class="font-medium">猕猴桃</h3>
+                    <p class="text-xs text-gray-500">1个 · 61卡路里</p>
+                  </div>
+                </div>
+                <button class="text-gray-400 hover:text-red-500">
+                  <i class="fa fa-trash"></i>
+                </button>
+              </div>
+              <div class="bg-white rounded-xl p-3 border border-gray-100 card-shadow flex justify-between items-center">
+                <div class="flex items-center">
+                  <div class="w-10 h-10 rounded-lg overflow-hidden mr-3">
+                    <div class="w-full h-full flex items-center justify-center bg-orange-100 text-xl">🥭</div>
+                  </div>
+                  <div>
+                    <h3 class="font-medium">百香果</h3>
+                    <p class="text-xs text-gray-500">1个 · 97卡路里</p>
+                  </div>
+                </div>
+                <button class="text-gray-400 hover:text-red-500">
+                  <i class="fa fa-trash"></i>
+                </button>
+              </div>
+            </div>
+            <!-- 空状态 -->
+            <div class="hidden flex flex-col items-center justify-center py-8 text-gray-400">
+              <i class="fa fa-utensils text-4xl mb-2"></i>
+              <p class="text-sm">早餐还没有记录</p>
+              <button class="mt-2 text-primary text-sm">添加食物</button>
+            </div>
+          </div>
+          
+          <div class="meal-content hidden" id="lunch-content">
+            <div class="space-y-3" id="lunch-list">
+              <!-- 午餐内容将通过JS动态添加 -->
+            </div>
+            <!-- 空状态 -->
+            <div class="flex flex-col items-center justify-center py-8 text-gray-400">
+              <i class="fa fa-utensils text-4xl mb-2"></i>
+              <p class="text-sm">午餐还没有记录</p>
+              <button class="mt-2 text-primary text-sm add-food-btn" data-meal="lunch">添加食物</button>
+            </div>
+          </div>
+          
+          <div class="meal-content hidden" id="dinner-content">
+            <div class="space-y-3" id="dinner-list">
+              <!-- 晚餐内容将通过JS动态添加 -->
+            </div>
+            <!-- 空状态 -->
+            <div class="flex flex-col items-center justify-center py-8 text-gray-400">
+              <i class="fa fa-utensils text-4xl mb-2"></i>
+              <p class="text-sm">晚餐还没有记录</p>
+              <button class="mt-2 text-primary text-sm add-food-btn" data-meal="dinner">添加食物</button>
+            </div>
+          </div>
+          
+          <div class="meal-content hidden" id="snack-content">
+            <div class="space-y-3" id="snack-list">
+              <!-- 零食内容将通过JS动态添加 -->
+            </div>
+            <!-- 空状态 -->
+            <div class="flex flex-col items-center justify-center py-8 text-gray-400">
+              <i class="fa fa-utensils text-4xl mb-2"></i>
+              <p class="text-sm">零食还没有记录</p>
+              <button class="mt-2 text-primary text-sm add-food-btn" data-meal="snack">添加食物</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 食物搜索页面 -->
+      <div id="search-page" class="page hidden">
+        <header class="bg-white shadow-sm p-4 sticky top-0 z-10">
+          <div class="relative">
+            <input type="text" id="food-search-input" placeholder="搜索食物..." class="w-full pl-10 pr-4 py-2 rounded-full bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary">
+            <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+          </div>
+        </header>
+        
+        <!-- 分类筛选 -->
+        <div class="px-4 py-3 overflow-x-auto">
+          <div class="flex space-x-2 min-w-max">
+            <button class="category-btn whitespace-nowrap px-4 py-1 rounded-full bg-primary text-white text-sm">全部</button>
+            <button class="category-btn whitespace-nowrap px-4 py-1 rounded-full bg-gray-100 text-gray-700 text-sm">水果</button>
+            <button class="category-btn whitespace-nowrap px-4 py-1 rounded-full bg-gray-100 text-gray-700 text-sm">蔬菜</button>
+            <button class="category-btn whitespace-nowrap px-4 py-1 rounded-full bg-gray-100 text-gray-700 text-sm">主食</button>
+            <button class="category-btn whitespace-nowrap px-4 py-1 rounded-full bg-gray-100 text-gray-700 text-sm">蛋白质</button>
+            <button class="category-btn whitespace-nowrap px-4 py-1 rounded-full bg-gray-100 text-gray-700 text-sm">零食</button>
+          </div>
+        </div>
+        
+        <!-- 搜索结果 -->
+        <div class="p-4" id="search-results">
+          <div class="pb-16 grid grid-cols-2 gap-3">
+            <!-- 食物卡片将通过JS动态添加 -->
+          </div>
+          
+          <!-- 空状态 -->
+          <div id="search-empty-state" class="hidden flex flex-col items-center justify-center py-12 text-gray-400">
+            <i class="fa fa-search text-4xl mb-2"></i>
+            <p class="text-sm">没有找到匹配的食物</p>
+            <p class="text-xs mt-1">请尝试其他关键词</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 食物详情页面 -->
+      <div id="food-detail-page" class="page hidden">
+        <header class="bg-white shadow-sm p-4 sticky top-0 z-10 flex justify-between items-center">
+          <button id="back-to-search" class="text-gray-500">
+            <i class="fa fa-arrow-left"></i>
+          </button>
+          <h2 class="font-medium">食物详情</h2>
+          <div class="w-6"></div> <!-- 占位，保持标题居中 -->
+        </header>
+        
+        <div class="p-4">
+          <!-- 食物图片或Emoji -->
+          <div class="w-full h-48 rounded-xl overflow-hidden mb-4 flex items-center justify-center bg-gray-100">
+            <div id="food-detail-emoji" class="text-8xl">🐟</div>
+          </div>
+          
+          <!-- 食物名称和热量 -->
+          <div class="flex justify-between items-center mb-4">
+            <h1 id="food-detail-name" class="text-xl font-bold">猕猴桃</h1>
+            <span id="food-detail-calorie" class="text-primary font-semibold">61 卡路里</span>
+          </div>
+          
+          <!-- 营养成分 -->
+          <div class="bg-gray-50 rounded-xl p-4 mb-4">
+            <h3 class="text-sm font-medium text-gray-500 mb-3">营养成分 (每份)</h3>
+            <div class="space-y-2">
+              <div class="flex justify-between">
+                <span class="text-sm">碳水化合物</span>
+                <span id="food-detail-carbs" class="text-sm font-medium">15g</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-sm">蛋白质</span>
+                <span id="food-detail-protein" class="text-sm font-medium">1.1g</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-sm">脂肪</span>
+                <span id="food-detail-fat" class="text-sm font-medium">0.5g</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-sm">膳食纤维</span>
+                <span id="food-detail-fiber" class="text-sm font-medium">2.6g</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 份量选择 -->
+          <div class="mb-6">
+            <h3 class="text-sm font-medium text-gray-500 mb-3">选择份量</h3>
+            <div class="grid grid-cols-3 gap-2">
+              <button class="portion-btn px-3 py-2 border border-gray-200 rounded-lg text-center">
+                <span class="block text-sm">1/2个</span>
+                <span class="block text-xs text-gray-500">30卡路里</span>
+              </button>
+              <button class="portion-btn px-3 py-2 border border-primary bg-primary-light rounded-lg text-center">
+                <span class="block text-sm">1个</span>
+                <span class="block text-xs text-gray-500">61卡路里</span>
+              </button>
+              <button class="portion-btn px-3 py-2 border border-gray-200 rounded-lg text-center">
+                <span class="block text-sm">2个</span>
+                <span class="block text-xs text-gray-500">122卡路里</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- 添加到餐食按钮 -->
+          <button id="add-to-meal-btn" class="w-full py-3 bg-primary text-white rounded-xl font-medium flex items-center justify-center">
+            <i class="fa fa-plus-circle mr-2"></i> 添加到早餐
+          </button>
+        </div>
+      </div>
+
+      <!-- 进度追踪页面 -->
+      <div id="progress-page" class="page hidden">
+        <header class="bg-gradient-to-r from-primary to-secondary text-white p-4">
+          <h1 class="text-xl font-bold">进度追踪</h1>
+        </header>
+        
+        <!-- 总体进度 -->
+        <div class="p-6 pb-24">
+          <div class="bg-white rounded-xl p-4 card-shadow mb-6">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-lg font-semibold">总体进度</h2>
+              <span class="text-sm text-gray-500">本周</span>
+            </div>
+            <div class="flex items-center justify-center mb-4">
+              <div class="relative w-32 h-32">
+                <svg class="w-full h-full" viewBox="0 0 100 100">
+                  <!-- 背景圆环 -->
+                  <circle class="text-gray-200" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50"></circle>
+                  <!-- 进度圆环 -->
+                  <circle class="text-primary progress-ring-circle" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" stroke-dasharray="251.2" stroke-dashoffset="100.5"></circle>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                  <span class="text-2xl font-bold text-dark">60%</span>
+                  <span class="text-xs text-gray-500">完成率</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex justify-between text-sm">
+              <div class="text-center">
+                <p class="text-gray-500">目标</p>
+                <p class="font-medium">1200卡路里/天</p>
+              </div>
+              <div class="text-center">
+                <p class="text-gray-500">平均摄入</p>
+                <p class="font-medium">950卡路里/天</p>
+              </div>
+              <div class="text-center">
+                <p class="text-gray-500">连续打卡</p>
+                <p class="font-medium">5天</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 每日摄入趋势 -->
+          <div class="bg-white rounded-xl p-4 card-shadow mb-6">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-lg font-semibold">每日摄入趋势</h2>
+              <div class="flex space-x-1">
+                <button class="text-xs px-2 py-1 bg-primary text-white rounded">周</button>
+                <button class="text-xs px-2 py-1 bg-gray-100 text-gray-500 rounded">月</button>
+              </div>
+            </div>
+            <div class="h-40">
+              <canvas id="calorie-chart"></canvas>
+            </div>
+          </div>
+          
+          <!-- 营养分布 -->
+          <div class="bg-white rounded-xl p-4 card-shadow">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-lg font-semibold">营养分布</h2>
+              <span class="text-sm text-gray-500">本周平均</span>
+            </div>
+            <div class="flex justify-center mb-4">
+              <div class="w-32 h-32">
+                <canvas id="nutrition-chart"></canvas>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <div class="w-3 h-3 rounded-full bg-blue-500 mx-auto mb-1"></div>
+                <p class="text-xs">碳水化合物</p>
+                <p class="text-sm font-medium">50%</p>
+              </div>
+              <div>
+                <div class="w-3 h-3 rounded-full bg-purple-500 mx-auto mb-1"></div>
+                <p class="text-xs">蛋白质</p>
+                <p class="text-sm font-medium">30%</p>
+              </div>
+              <div>
+                <div class="w-3 h-3 rounded-full bg-yellow-500 mx-auto mb-1"></div>
+                <p class="text-xs">脂肪</p>
+                <p class="text-sm font-medium">20%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 个人资料页面 -->
+      <div id="profile-page" class="page hidden">
+        <header class="bg-gradient-to-r from-primary to-secondary text-white p-4">
+          <h1 class="text-xl font-bold">我的</h1>
+        </header>
+        
+        <div class="p-6 pb-24">
+          <!-- 用户信息 -->
+          <div class="flex flex-col items-center mb-6">
+            <div class="w-24 h-24 rounded-full bg-primary-light text-primary flex items-center justify-center text-5xl border-4 border-white shadow-md">
+              👦
+            </div>
+            <h2 class="text-xl font-bold">用户</h2>
+            <p class="text-sm text-gray-500">已使用 14 天</p>
+          </div>
+          
+          <!-- 目标设置 -->
+          <div class="bg-white rounded-xl p-4 card-shadow mb-6">
+            <h2 class="text-lg font-semibold mb-4">每日热量目标</h2>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm">1200 卡路里</span>
+              <button class="text-primary text-sm">编辑</button>
+            </div>
+            <input type="range" min="1000" max="3000" step="100" value="1200" class="w-full accent-primary">
+            <div class="flex justify-between text-xs text-gray-500 mt-1">
+              <span>1000</span>
+              <span>2000</span>
+              <span>3000</span>
+            </div>
+          </div>
+          
+          <!-- 成就 -->
+          <div class="bg-white rounded-xl p-4 card-shadow mb-6">
+            <h2 class="text-lg font-semibold mb-4">我的成就</h2>
+            <div class="grid grid-cols-3 gap-3">
+              <div class="flex flex-col items-center">
+                <div class="w-16 h-16 rounded-full bg-primary-light flex items-center justify-center mb-2">
+                  <i class="fa fa-star text-primary text-xl"></i>
+                </div>
+                <p class="text-xs text-center">连续7天打卡</p>
+              </div>
+              <div class="flex flex-col items-center">
+                <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-2">
+                  <i class="fa fa-trophy text-gray-400 text-xl"></i>
+                </div>
+                <p class="text-xs text-center text-gray-400">首次达成目标</p>
+              </div>
+              <div class="flex flex-col items-center">
+                <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-2">
+                  <i class="fa fa-leaf text-gray-400 text-xl"></i>
+                </div>
+                <p class="text-xs text-center text-gray-400">健康饮食</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 设置选项 -->
+          <div class="bg-white rounded-xl p-4 card-shadow">
+            <h2 class="text-lg font-semibold mb-4">设置</h2>
+            <div class="space-y-3">
+              <div class="flex justify-between items-center">
+                <div class="flex items-center">
+                  <i class="fa fa-bell text-gray-500 mr-3"></i>
+                  <span>通知</span>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" checked="">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="flex items-center">
+                  <i class="fa fa-moon-o text-gray-500 mr-3"></i>
+                  <span>深色模式</span>
+                </div>
+                <label class="switch">
+                  <input type="checkbox">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="flex items-center">
+                  <i class="fa fa-history text-gray-500 mr-3"></i>
+                  <span>历史记录</span>
+                </div>
+                <i class="fa fa-chevron-right text-gray-400"></i>
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="flex items-center">
+                  <i class="fa fa-question-circle text-gray-500 mr-3"></i>
+                  <span>帮助与支持</span>
+                </div>
+                <i class="fa fa-chevron-right text-gray-400"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部导航栏 -->
+      <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 flex justify-around items-center py-2 z-20">
+        <button class="nav-btn flex flex-col items-center justify-center p-2 w-1/4 active" data-page="dashboard-page">
+          <i class="fa fa-home text-lg"></i>
+          <span class="text-xs mt-1">首页</span>
+        </button>
+        <button class="nav-btn flex flex-col items-center justify-center p-2 w-1/4" data-page="search-page">
+          <i class="fa fa-search text-lg"></i>
+          <span class="text-xs mt-1">搜索</span>
+        </button>
+        <button class="nav-btn flex flex-col items-center justify-center p-2 w-1/4" data-page="progress-page">
+          <i class="fa fa-line-chart text-lg"></i>
+          <span class="text-xs mt-1">进度</span>
+        </button>
+        <button class="nav-btn flex flex-col items-center justify-center p-2 w-1/4" data-page="profile-page">
+          <i class="fa fa-user text-lg"></i>
+          <span class="text-xs mt-1">我的</span>
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <style>
+    /* 开关样式 */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+    }
+    
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+    }
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .4s;
+    }
+    
+    input:checked + .slider {
+      background-color: #22c55e;
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+    
+    .slider.round {
+      border-radius: 20px;
+    }
+    
+    .slider.round:before {
+      border-radius: 50%;
+    }
+    
+    /* 页面切换动画 */
+    .page {
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    
+    .page.active {
+      display: block;
+    }
+    
+    .page.hidden {
+      display: none;
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    
+    /* 底部导航栏激活状态 */
+    .nav-btn.active {
+      color: #22c55e;
+    }
+    
+    /* 餐食标签页激活状态 */
+    .meal-tab.active {
+      color: #22c55e;
+      border-bottom-color: #22c55e;
+    }
+  </style>
+
+  <script>
+    // 食物数据库
+    const foodDatabase = [
+      {
+        id: 1,
+        name: '猕猴桃',
+        category: '水果',
+        calories: 61,
+        carbs: 15,
+        protein: 1.1,
+        fat: 0.5,
+        fiber: 2.6,
+        image: 'emoji:kiwi'
+      },
+      {
+        id: 2,
+        name: '百香果',
+        category: '水果',
+        calories: 97,
+        carbs: 23,
+        protein: 2.2,
+        fat: 0.7,
+        fiber: 10.4,
+        image: 'emoji:passionfruit'
+      },
+      {
+        id: 3,
+        name: '西瓜',
+        category: '水果',
+        calories: 30,
+        carbs: 7.6,
+        protein: 0.6,
+        fat: 0.2,
+        fiber: 0.4,
+        image: 'emoji:watermelon'
+      },
+      {
+        id: 4,
+        name: '西兰花',
+        category: '蔬菜',
+        calories: 34,
+        carbs: 7.1,
+        protein: 2.8,
+        fat: 0.4,
+        fiber: 2.6,
+        image: 'emoji:broccoli'
+      },
+      {
+        id: 5,
+        name: '小白菜',
+        category: '蔬菜',
+        calories: 13,
+        carbs: 2.4,
+        protein: 1.5,
+        fat: 0.2,
+        fiber: 1.1,
+        image: 'emoji:bokchoy'
+      },
+      {
+        id: 6,
+        name: '全麦面包',
+        category: '主食',
+        calories: 69,
+        carbs: 12.8,
+        protein: 3.6,
+        fat: 1,
+        fiber: 2.6,
+        image: 'emoji:bread'
+      },
+      {
+        id: 7,
+        name: '米饭',
+        category: '主食',
+        calories: 130,
+        carbs: 28.2,
+        protein: 2.7,
+        fat: 0.3,
+        fiber: 0.4,
+        image: 'emoji:rice'
+      },
+      {
+        id: 8,
+        name: '鸡胸肉',
+        category: '蛋白质',
+        calories: 165,
+        carbs: 0,
+        protein: 31,
+        fat: 3.6,
+        fiber: 0,
+        image: 'emoji:chicken'
+      },
+      {
+        id: 9,
+        name: '三文鱼',
+        category: '蛋白质',
+        calories: 208,
+        carbs: 0,
+        protein: 20.4,
+        fat: 13.4,
+        fiber: 0,
+        image: 'emoji:salmon'
+      },
+      {
+        id: 10,
+        name: '鸡蛋',
+        category: '蛋白质',
+        calories: 155,
+        carbs: 1.1,
+        protein: 13,
+        fat: 10,
+        fiber: 0,
+        image: 'emoji:egg'
+      }
+    ];
+
+    // 用户数据
+    let userData = {
+      currentCalories: 300,
+      targetCalories: 1200,
+      macros: {
+        carbs: 25,
+        protein: 18,
+        fat: 12
+      },
+      meals: {
+        breakfast: [
+          {
+            id: 1,
+            name: '猕猴桃',
+            calories: 61,
+            quantity: 1,
+            image: 'emoji:kiwi'
+          },
+          {
+            id: 2,
+            name: '百香果',
+            calories: 97,
+            quantity: 1,
+            image: 'emoji:passionfruit'
+          }
+        ],
+        lunch: [],
+        dinner: [],
+        snack: []
+      },
+      selectedMealType: 'breakfast',
+      selectedFood: null
+    };
+
+    // DOM 元素
+    const elements = {
+      pages: document.querySelectorAll('.page'),
+      navBtns: document.querySelectorAll('.nav-btn'),
+      mealTabs: document.querySelectorAll('.meal-tab'),
+      mealContents: document.querySelectorAll('.meal-content'),
+      tabIndicator: document.querySelector('.tab-indicator'),
+      addMealBtn: document.getElementById('add-meal-btn'),
+      addFoodBtns: document.querySelectorAll('.add-food-btn'),
+      foodSearchInput: document.getElementById('food-search-input'),
+      searchResults: document.getElementById('search-results'),
+      searchEmptyState: document.getElementById('search-empty-state'),
+      backToSearch: document.getElementById('back-to-search'),
+      foodDetailPage: document.getElementById('food-detail-page'),
+      foodDetailName: document.getElementById('food-detail-name'),
+      foodDetailCalorie: document.getElementById('food-detail-calorie'),
+      foodDetailCarbs: document.getElementById('food-detail-carbs'),
+      foodDetailProtein: document.getElementById('food-detail-protein'),
+      foodDetailFat: document.getElementById('food-detail-fat'),
+      foodDetailFiber: document.getElementById('food-detail-fiber'),
+      portionBtns: document.querySelectorAll('.portion-btn'),
+      addToMealBtn: document.getElementById('add-to-meal-btn'),
+      calorieProgress: document.getElementById('calorie-progress'),
+      caloriePercentage: document.getElementById('calorie-percentage'),
+      calorieBar: document.getElementById('calorie-bar'),
+      carbsValue: document.getElementById('carbs-value'),
+      proteinValue: document.getElementById('protein-value'),
+      fatValue: document.getElementById('fat-value'),
+      greeting: document.getElementById('greeting'),
+      currentDate: document.getElementById('current-date')
+    };
+
+    // 初始化
+    function init() {
+      // 设置当前日期和问候语
+      setDateAndGreeting();
+      
+      // 初始化进度环
+      updateProgressRing();
+      
+      // 初始化底部导航
+      initNavigation();
+      
+      // 初始化餐食标签页
+      initMealTabs();
+      
+      // 初始化搜索功能
+      initSearch();
+      
+      // 初始化食物详情页
+      initFoodDetail();
+      
+      // 初始化图表
+      initCharts();
+      
+      // 绑定事件
+      bindEvents();
+    }
+
+    // 设置当前日期和问候语
+    function setDateAndGreeting() {
+      const now = new Date();
+      const hours = now.getHours();
+      const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+      const dateString = now.toLocaleDateString('zh-CN', options);
+      
+      let greeting = '';
+      if (hours < 12) {
+        greeting = '早上好';
+      } else if (hours < 18) {
+        greeting = '下午好';
+      } else {
+        greeting = '晚上好';
+      }
+      
+      elements.greeting.textContent = `${greeting}，用户`;
+      elements.currentDate.textContent = dateString;
+    }
+
+    // 更新进度环
+    function updateProgressRing() {
+      const percentage = (userData.currentCalories / userData.targetCalories) * 100;
+      const clampedPercentage = Math.min(100, percentage);
+      
+      // 更新文本
+      elements.calorieProgress.textContent = userData.currentCalories;
+      elements.caloriePercentage.textContent = `${Math.round(clampedPercentage)}%`;
+      
+      // 更新进度条
+      elements.calorieBar.style.width = `${clampedPercentage}%`;
+      
+      // 更新宏量营养素
+      elements.carbsValue.textContent = `${userData.macros.carbs}g`;
+      elements.proteinValue.textContent = `${userData.macros.protein}g`;
+      elements.fatValue.textContent = `${userData.macros.fat}g`;
+    }
+
+    // 初始化底部导航
+    function initNavigation() {
+      elements.navBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const targetPage = btn.getAttribute('data-page');
+          
+          // 更新导航按钮状态
+          elements.navBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          
+          // 切换页面
+          elements.pages.forEach(page => {
+            if (page.id === targetPage) {
+              page.classList.remove('hidden');
+              page.classList.add('active');
+            } else {
+              page.classList.add('hidden');
+              page.classList.remove('active');
+            }
+          });
+        });
+      });
+    }
+
+    // 初始化餐食标签页
+    function initMealTabs() {
+      elements.mealTabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => {
+          const mealType = tab.getAttribute('data-meal');
+          
+          // 更新标签页状态
+          elements.mealTabs.forEach(t => {
+            t.classList.remove('active', 'text-primary', 'border-primary');
+            t.classList.add('text-gray-400', 'border-transparent');
+          });
+          tab.classList.add('active', 'text-primary', 'border-primary');
+          tab.classList.remove('text-gray-400', 'border-transparent');
+          
+          // 移动指示器
+          elements.tabIndicator.style.transform = `translateX(${index * 100}%)`;
+          
+          // 显示对应内容
+          elements.mealContents.forEach(content => {
+            content.classList.add('hidden');
+          });
+          document.getElementById(`${mealType}-content`).classList.remove('hidden');
+        });
+      });
+    }
+
+    // 初始化搜索功能
+    function initSearch() {
+      // 显示所有食物
+      renderFoodCards(foodDatabase);
+      
+      // 搜索输入事件
+      elements.foodSearchInput.addEventListener('input', () => {
+        const searchTerm = elements.foodSearchInput.value.toLowerCase().trim();
+        
+        if (searchTerm === '') {
+          renderFoodCards(foodDatabase);
+          return;
+        }
+        
+        // 搜索匹配的食物
+        const filteredFoods = foodDatabase.filter(food => 
+          food.name.toLowerCase().includes(searchTerm) ||
+          food.category.toLowerCase().includes(searchTerm)
+        );
+        
+        renderFoodCards(filteredFoods);
+      });
+    }
+
+    // 渲染食物卡片
+    function renderFoodCards(foods) {
+      const container = elements.searchResults.querySelector('.grid');
+      container.innerHTML = '';
+      
+      if (foods.length === 0) {
+        container.parentElement.classList.add('hidden');
+        elements.searchEmptyState.classList.remove('hidden');
+        return;
+      }
+      
+      container.parentElement.classList.remove('hidden');
+      elements.searchEmptyState.classList.add('hidden');
+      
+      foods.forEach(food => {
+        const card = document.createElement('div');
+        card.className = 'food-card bg-white rounded-xl overflow-hidden border border-gray-100 card-shadow food-card-hover';
+        
+        // 处理图片或emoji
+        let imageContent = '';
+        if (food.image && food.image.startsWith('emoji:')) {
+          const emojiType = food.image.split(':')[1];
+          let emoji = '';
+          let bgColor = 'bg-gray-100';
+          
+          switch(emojiType) {
+            case 'kiwi': emoji = '🥝'; bgColor = 'bg-green-100'; break;
+            case 'passionfruit': emoji = '🥭'; bgColor = 'bg-orange-100'; break; // 使用芒果emoji代替百香果
+            case 'watermelon': emoji = '🍉'; bgColor = 'bg-red-100'; break;
+            case 'broccoli': emoji = '🥦'; bgColor = 'bg-green-100'; break;
+            case 'bokchoy': emoji = '🥬'; bgColor = 'bg-green-100'; break;
+            case 'bread': emoji = '🍞'; bgColor = 'bg-yellow-100'; break;
+            case 'rice': emoji = '🍚'; bgColor = 'bg-yellow-100'; break;
+            case 'chicken': emoji = '🍗'; bgColor = 'bg-yellow-100'; break;
+            case 'salmon': emoji = '🐟'; bgColor = 'bg-pink-100'; break;
+            case 'egg': emoji = '🥚'; bgColor = 'bg-yellow-100'; break;
+            default: emoji = '🍎'; bgColor = 'bg-red-100'; // 默认水果emoji
+          }
+          
+          imageContent = `<div class="h-full ${bgColor} flex items-center justify-center text-4xl">${emoji}</div>`;
+        } else {
+          imageContent = `<img src="${food.image}" alt="${food.name}" class="w-full h-full object-cover">`;
+        }
+        
+        card.innerHTML = `
+          <div class="h-24 overflow-hidden">
+            ${imageContent}
+          </div>
+          <div class="p-3">
+            <h3 class="font-medium text-sm">${food.name}</h3>
+            <div class="flex justify-between items-center mt-1">
+              <span class="text-xs text-gray-500">${food.category}</span>
+              <span class="text-xs font-medium">${food.calories} 卡</span>
+            </div>
+          </div>
+        `;
+        
+        card.addEventListener('click', () => showFoodDetail(food));
+        container.appendChild(card);
+      });
+    }
+
+    // 初始化食物详情页
+    function initFoodDetail() {
+      // 返回按钮
+      elements.backToSearch.addEventListener('click', () => {
+        elements.foodDetailPage.classList.add('hidden');
+        document.getElementById('search-page').classList.remove('hidden');
+      });
+      
+      // 份量选择
+      elements.portionBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          elements.portionBtns.forEach(b => {
+            b.classList.remove('border-primary', 'bg-primary-light');
+            b.classList.add('border-gray-200');
+          });
+          btn.classList.add('border-primary', 'bg-primary-light');
+          btn.classList.remove('border-gray-200');
+        });
+      });
+      
+      // 添加到餐食按钮
+      elements.addToMealBtn.addEventListener('click', () => {
+        if (!userData.selectedFood) return;
+        
+        // 获取选中的份量
+        const activePortion = document.querySelector('.portion-btn.border-primary');
+        const portionText = activePortion.querySelector('.text-sm').textContent;
+        const caloriesText = activePortion.querySelector('.text-xs').textContent;
+        const calories = parseInt(caloriesText);
+        
+        // 计算份量倍数
+        let multiplier = 1;
+        if (portionText.includes('1/2')) multiplier = 0.5;
+        else if (portionText.includes('2')) multiplier = 2;
+        
+        // 创建餐食项
+        const mealItem = {
+          id: Date.now(), // 使用时间戳作为唯一ID
+          name: userData.selectedFood.name,
+          calories: Math.round(userData.selectedFood.calories * multiplier),
+          quantity: multiplier,
+          image: userData.selectedFood.image,
+          macros: {
+            carbs: Math.round(userData.selectedFood.carbs * multiplier),
+            protein: Math.round(userData.selectedFood.protein * multiplier),
+            fat: Math.round(userData.selectedFood.fat * multiplier)
+          }
+        };
+        
+        // 添加到用户数据
+        userData.meals[userData.selectedMealType].push(mealItem);
+        
+        // 更新总热量和宏量营养素
+        userData.currentCalories += mealItem.calories;
+        userData.macros.carbs += mealItem.macros.carbs;
+        userData.macros.protein += mealItem.macros.protein;
+        userData.macros.fat += mealItem.macros.fat;
+        
+        // 更新UI
+        updateProgressRing();
+        renderMealItems();
+        
+        // 返回仪表板
+        navigateToPage('dashboard-page');
+      });
+    }
+
+    // 显示食物详情
+    function showFoodDetail(food) {
+      userData.selectedFood = food;
+      
+      // 更新详情页内容
+      elements.foodDetailName.textContent = food.name;
+      elements.foodDetailCalorie.textContent = `${food.calories} 卡路里`;
+      elements.foodDetailCarbs.textContent = `${food.carbs}g`;
+      elements.foodDetailProtein.textContent = `${food.protein}g`;
+      elements.foodDetailFat.textContent = `${food.fat}g`;
+      elements.foodDetailFiber.textContent = `${food.fiber}g`;
+      
+      // 根据食物类型显示对应的emoji
+      const emojiElement = document.getElementById('food-detail-emoji');
+      if (food.image && food.image.startsWith('emoji:')) {
+        const emojiType = food.image.split(':')[1];
+        switch(emojiType) {
+          case 'kiwi': emojiElement.textContent = '🥝'; break;
+          case 'passionfruit': emojiElement.textContent = '🥭'; break; // 使用芒果emoji代替百香果
+          case 'watermelon': emojiElement.textContent = '🍉'; break;
+          case 'broccoli': emojiElement.textContent = '🥦'; break;
+          case 'bokchoy': emojiElement.textContent = '🥬'; break;
+          case 'bread': emojiElement.textContent = '🍞'; break;
+          case 'rice': emojiElement.textContent = '🍚'; break;
+          case 'chicken': emojiElement.textContent = '🍗'; break;
+          case 'salmon': emojiElement.textContent = '🐟'; break;
+          case 'egg': emojiElement.textContent = '🥚'; break;
+          default: emojiElement.textContent = '🍎'; // 默认水果emoji
+        }
+      } else {
+        emojiElement.textContent = '🍎'; // 默认水果emoji
+      }
+      
+      // 更新份量按钮
+      elements.portionBtns[0].querySelector('.text-xs').textContent = `${Math.round(food.calories * 0.5)}卡路里`;
+      elements.portionBtns[1].querySelector('.text-xs').textContent = `${food.calories}卡路里`;
+      elements.portionBtns[2].querySelector('.text-xs').textContent = `${food.calories * 2}卡路里`;
+      
+      // 重置份量选择
+      elements.portionBtns.forEach(btn => {
+        btn.classList.remove('border-primary', 'bg-primary-light');
+        btn.classList.add('border-gray-200');
+      });
+      elements.portionBtns[1].classList.add('border-primary', 'bg-primary-light');
+      elements.portionBtns[1].classList.remove('border-gray-200');
+      
+      // 更新添加按钮文本
+      const mealTypeText = {
+        'breakfast': '早餐',
+        'lunch': '午餐',
+        'dinner': '晚餐',
+        'snack': '零食'
+      };
+      elements.addToMealBtn.innerHTML = `<i class="fa fa-plus-circle mr-2"></i> 添加到${mealTypeText[userData.selectedMealType]}`;
+      
+      // 切换到详情页
+      document.getElementById('search-page').classList.add('hidden');
+      elements.foodDetailPage.classList.remove('hidden');
+    }
+
+    // 渲染餐食项
+    function renderMealItems() {
+      for (const mealType in userData.meals) {
+        const container = document.getElementById(`${mealType}-list`);
+        const emptyState = container.nextElementSibling;
+        
+        if (userData.meals[mealType].length === 0) {
+          container.classList.add('hidden');
+          emptyState.classList.remove('hidden');
+          continue;
+        }
+        
+        container.classList.remove('hidden');
+        emptyState.classList.add('hidden');
+        container.innerHTML = '';
+        
+        userData.meals[mealType].forEach(item => {
+          const mealItem = document.createElement('div');
+          mealItem.className = 'bg-white rounded-xl p-3 border border-gray-100 card-shadow flex justify-between items-center';
+          
+          // 处理图片或emoji
+          let imageContent = '';
+          if (item.image && item.image.startsWith('emoji:')) {
+            const emojiType = item.image.split(':')[1];
+            let emoji = '';
+            let bgColor = 'bg-gray-100';
+            
+            switch(emojiType) {
+              case 'kiwi': emoji = '🥝'; bgColor = 'bg-green-100'; break;
+              case 'passionfruit': emoji = '🥭'; bgColor = 'bg-orange-100'; break; // 使用芒果emoji代替百香果
+              case 'watermelon': emoji = '🍉'; bgColor = 'bg-red-100'; break;
+              case 'broccoli': emoji = '🥦'; bgColor = 'bg-green-100'; break;
+              case 'bokchoy': emoji = '🥬'; bgColor = 'bg-green-100'; break;
+              case 'bread': emoji = '🍞'; bgColor = 'bg-yellow-100'; break;
+              case 'rice': emoji = '🍚'; bgColor = 'bg-yellow-100'; break;
+              case 'chicken': emoji = '🍗'; bgColor = 'bg-yellow-100'; break;
+              case 'salmon': emoji = '🐟'; bgColor = 'bg-pink-100'; break;
+              case 'egg': emoji = '🥚'; bgColor = 'bg-yellow-100'; break;
+              default: emoji = '🍎'; bgColor = 'bg-red-100'; // 默认水果emoji
+            }
+            
+            imageContent = `<div class="w-full h-full flex items-center justify-center ${bgColor} text-xl">${emoji}</div>`;
+          } else {
+            imageContent = `<img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover">`;
+          }
+          
+          mealItem.innerHTML = `
+            <div class="flex items-center">
+              <div class="w-10 h-10 rounded-lg overflow-hidden mr-3">
+                ${imageContent}
+              </div>
+              <div>
+                <h3 class="font-medium">${item.name}</h3>
+                <p class="text-xs text-gray-500">${item.quantity}份 · ${item.calories}卡路里</p>
+              </div>
+            </div>
+            <button class="text-gray-400 hover:text-red-500 delete-meal-item" data-id="${item.id}">
+              <i class="fa fa-trash"></i>
+            </button>
+          `;
+          
+          container.appendChild(mealItem);
+        });
+        
+        // 添加删除事件
+        document.querySelectorAll('.delete-meal-item').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const itemId = parseInt(e.currentTarget.getAttribute('data-id'));
+            deleteMealItem(mealType, itemId);
+          });
+        });
+      }
+    }
+
+    // 删除餐食项
+    function deleteMealItem(mealType, itemId) {
+      const mealItems = userData.meals[mealType];
+      const index = mealItems.findIndex(item => item.id === itemId);
+      
+      if (index !== -1) {
+        const deletedItem = mealItems.splice(index, 1)[0];
+        
+        // 更新总热量和宏量营养素
+        userData.currentCalories -= deletedItem.calories;
+        userData.macros.carbs -= deletedItem.macros?.carbs || 0;
+        userData.macros.protein -= deletedItem.macros?.protein || 0;
+        userData.macros.fat -= deletedItem.macros?.fat || 0;
+        
+        // 更新UI
+        updateProgressRing();
+        renderMealItems();
+      }
+    }
+
+    // 初始化图表
+    function initCharts() {
+      // 每日摄入趋势图
+      const calorieCtx = document.getElementById('calorie-chart').getContext('2d');
+      new Chart(calorieCtx, {
+        type: 'bar',
+        data: {
+          labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+          datasets: [{
+            label: '摄入热量',
+            data: [950, 1050, 850, 1100, 950, 1200, 950],
+            backgroundColor: '#22c55e',
+            borderRadius: 6
+          }, {
+            label: '目标热量',
+            data: [1200, 1200, 1200, 1200, 1200, 1200, 1200],
+            type: 'line',
+            borderColor: '#16a34a',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            pointRadius: 0,
+            fill: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: {
+                display: true,
+                color: 'rgba(0, 0, 0, 0.05)'
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              }
+            }
+          }
+        }
+      });
+      
+      // 营养分布图
+      const nutritionCtx = document.getElementById('nutrition-chart').getContext('2d');
+      new Chart(nutritionCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['碳水化合物', '蛋白质', '脂肪'],
+          datasets: [{
+            data: [50, 30, 20],
+            backgroundColor: ['#3b82f6', '#a855f7', '#eab308'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          cutout: '70%'
+        }
+      });
+    }
+
+    // 导航到指定页面
+    function navigateToPage(pageId) {
+      elements.navBtns.forEach(btn => {
+        if (btn.getAttribute('data-page') === pageId) {
+          btn.click();
+        }
+      });
+    }
+
+    // 绑定事件
+    function bindEvents() {
+      // 添加餐食按钮
+      elements.addMealBtn.addEventListener('click', () => {
+        userData.selectedMealType = 'breakfast';
+        navigateToPage('search-page');
+      });
+      
+      // 添加食物按钮（餐食空状态）
+      elements.addFoodBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const mealType = btn.getAttribute('data-meal');
+          userData.selectedMealType = mealType;
+          navigateToPage('search-page');
+        });
+      });
+      
+      // 分类筛选按钮
+      document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          // 更新按钮状态
+          document.querySelectorAll('.category-btn').forEach(b => {
+            b.classList.remove('bg-primary', 'text-white');
+            b.classList.add('bg-gray-100', 'text-gray-700');
+          });
+          btn.classList.add('bg-primary', 'text-white');
+          btn.classList.remove('bg-gray-100', 'text-gray-700');
+          
+          // 筛选食物
+          const category = btn.textContent.trim();
+          if (category === '全部') {
+            renderFoodCards(foodDatabase);
+          } else {
+            const filteredFoods = foodDatabase.filter(food => food.category === category);
+            renderFoodCards(filteredFoods);
+          }
+        });
+      });
+    }
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+
+
+</body></html>
